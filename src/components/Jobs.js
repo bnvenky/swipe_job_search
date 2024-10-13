@@ -9,6 +9,8 @@ const Jobs = () => {
   const [currentJobIndex, setCurrentJobIndex] = useState(0);
   const [popUpMessage, setPopUpMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [swipeDirection, setSwipeDirection] = useState(null); // To track swipe direction
+  const [isSwiping, setIsSwiping] = useState(false); // To track if swiping is happening
   const { setBookmarkedJobs, bookmarkedJobs } = useJob();
 
   // Fetch job list from API on component mount
@@ -41,6 +43,7 @@ const Jobs = () => {
 
   // Handle swiping left or right
   const handleSwipe = (direction, job) => {
+    setIsSwiping(false); // Reset swiping status after swipe action
     const updatedSwipedJobs = {
       ...swipedJobs,
       [job.id]: direction === 'right' ? 'bookmarked' : 'not_interested',
@@ -71,6 +74,20 @@ const Jobs = () => {
       const currentJob = jobs[currentJobIndex];
       if (currentJob) handleSwipe('right', currentJob);
     },
+    onSwiping: (eventData) => {
+      if (eventData.dir === 'Left') {
+        setSwipeDirection('left');
+        setIsSwiping(true); // Set swiping to true
+      }
+      if (eventData.dir === 'Right') {
+        setSwipeDirection('right');
+        setIsSwiping(true); // Set swiping to true
+      }
+    },
+    onSwiped: () => {
+      setSwipeDirection(null); // Reset swipe direction after swipe
+      setIsSwiping(false); // Reset swiping status after swipe action
+    },
     delta: 10,
     preventDefaultTouchmoveEvent: true,
     trackMouse: true,
@@ -98,9 +115,14 @@ const Jobs = () => {
       <h1 className="text-xl font-bold pb-5">Job Cards</h1>
       <div
         {...swipeHandlers}
-        className={`border rounded-lg shadow-md cursor-pointer w-full max-w-md relative overflow-hidden transition-all duration-300 transform ${
+        className={`border rounded-lg shadow-md cursor-pointer w-full max-w-md relative overflow-hidden transition-transform duration-300 transform ${
           status ? 'opacity-50 pointer-events-none' : ''
         }`}
+        style={{
+          transform: swipeDirection
+            ? `translateX(${swipeDirection === 'left' ? '-100%' : '100%'})`
+            : 'translateX(0)',
+        }} // Swipe animation
       >
         <img
           src={currentJob.creatives?.[0]?.thumb_url}
@@ -109,16 +131,28 @@ const Jobs = () => {
         />
         <div className="p-4">
           <h2 className="text-xl font-bold">{currentJob.title}</h2>
-          <h3 className="text-md font-semibold text-gray-700">
+          <h3 className="text-md font-semibold">
             Company: {currentJob.company_name}
           </h3>
           <p className="text-gray-600">
             Location: {currentJob.primary_details?.Place}
           </p>
-          <p className="mt-2 text-gray-500">
+          <p className="mt-2">
             Swipe right to bookmark, swipe left to discard.
           </p>
         </div>
+
+        {/* Swipe Overlay Animation */}
+        {isSwiping && swipeDirection === 'left' && (
+          <div className="absolute top-0 left-0 w-full h-full flex justify-center items-center text-2xl font-bold text-white bg-red-600 bg-opacity-75 transition-opacity duration-300">
+            Keep in Trash
+          </div>
+        )}
+        {isSwiping && swipeDirection === 'right' && (
+          <div className="absolute top-0 left-0 w-full h-full flex justify-center items-center text-2xl font-bold text-white bg-gray-600 bg-opacity-75 transition-opacity duration-300">
+            Keep in Bookmarks
+          </div>
+        )}
       </div>
 
       {/* Pop-Up Message */}
@@ -132,5 +166,6 @@ const Jobs = () => {
 };
 
 export default Jobs;
+
 
 
